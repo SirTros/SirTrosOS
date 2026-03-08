@@ -175,6 +175,7 @@
                     emoji = level > 20 ? "🔋" : "🪫";
                 }
                 
+                // Opraveno: Procenta vpravo
                 battEl.textContent = level + "% " + emoji;
             });
         }
@@ -203,7 +204,10 @@
             container.classList.remove('active');
             void container.offsetWidth; 
             bar.style.strokeDashoffset = '880';
+            
+            // Opraveno: Procenta vpravo v hlavní animaci
             text.textContent = Math.round(battery.level * 100) + '% Charging...';
+            
             container.classList.add('active');
 
             setTimeout(() => {
