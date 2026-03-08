@@ -7,7 +7,7 @@
     <style>
         :root {
             --ios-green: #30d158;
-            --nav-white: rgba(255, 255, 255, 1);
+            --nav-white: #ffffff;
         }
 
         body {
@@ -24,7 +24,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Ochrana proti otočení na šířku */
+        /* Landscape Protection */
         #portrait-warning {
             display: none;
             position: fixed;
@@ -43,12 +43,12 @@
             #status-bar, #nav-bar, #magsafe-container, #start-btn { display: none !important; }
         }
 
-        /* Top Bar - High up */
+        /* Top Bar - Pushed to the absolute top */
         #status-bar {
             position: fixed;
             top: 0;
             width: 100%;
-            padding: 8px 35px;
+            padding: 5px 35px; /* Minimal top padding */
             box-sizing: border-box;
             display: none;
             justify-content: space-between;
@@ -176,7 +176,7 @@
 
     <div id="portrait-warning">
         <h2>Please rotate your device</h2>
-        <p>This app is designed for portrait mode only.</p>
+        <p>Portrait mode only.</p>
     </div>
 
     <button id="start-btn">START</button>
@@ -217,8 +217,20 @@
         const clockEl = document.getElementById('clock');
         const battEl = document.getElementById('battery-status');
         
+        let wakeLock = null;
         let timer;
         let audioUnlocked = false;
+
+        // Function to keep screen on
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.log(`${err.name}, ${err.message}`);
+            }
+        }
 
         function updateStatus() {
             const now = new Date();
@@ -237,9 +249,10 @@
                 document.documentElement.requestFullscreen();
             }
             
-            // Pokus o zamknutí orientace (vyžaduje Fullscreen)
+            // Activate screen-on and orientation lock
+            requestWakeLock();
             if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('portrait').catch(e => console.log("Orientation lock not supported"));
+                screen.orientation.lock('portrait').catch(() => {});
             }
 
             sound.play().then(() => { sound.pause(); sound.currentTime = 0; audioUnlocked = true; }).catch(() => {});
@@ -282,6 +295,13 @@
             battery.addEventListener('chargingchange', () => { if (battery.charging) triggerMagsafe(); });
             if (battery.charging) {
                 startBtn.addEventListener('click', () => { setTimeout(triggerMagsafe, 500); }, { once: true });
+            }
+        });
+
+        // Re-request wake lock if tab becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                requestWakeLock();
             }
         });
     </script>
