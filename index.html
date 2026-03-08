@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Charging UI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magsafe UI</title>
     <style>
         :root {
             --ios-green: #30d158;
-            --nav-gray: rgba(255, 255, 255, 0.8);
+            --nav-gray: rgba(255, 255, 255, 0.6);
         }
 
         body {
@@ -21,14 +21,15 @@
             overflow: hidden;
             color: white;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Horní lišta */
+        /* Top Bar */
         #status-bar {
             position: fixed;
             top: 0;
             width: 100%;
-            padding: 15px 30px;
+            padding: 15px 35px;
             box-sizing: border-box;
             display: none;
             justify-content: space-between;
@@ -36,42 +37,42 @@
             font-size: 16px;
             font-weight: 600;
             z-index: 100;
-            transition: opacity 0.4s ease;
+            transition: opacity 0.3s ease;
         }
 
-        /* Spodní lišta - Android Style */
+        /* Bottom Nav - More apart and slightly lower */
         #nav-bar {
             position: fixed;
-            bottom: 0;
+            bottom: 5px; 
             width: 100%;
             height: 60px;
             display: none;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
-            padding: 0 50px;
+            padding: 0 45px; 
             box-sizing: border-box;
             z-index: 100;
-            transition: opacity 0.4s ease;
+            transition: opacity 0.3s ease;
         }
 
         .nav-svg {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             fill: none;
             stroke: var(--nav-gray);
-            stroke-width: 2.5;
+            stroke-width: 2.2;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
 
         #start-btn {
-            padding: 15px 40px;
+            padding: 15px 50px;
             font-size: 18px;
             font-weight: 600;
             color: #000;
             background-color: #fff;
             border: none;
-            border-radius: 30px;
+            border-radius: 40px;
             cursor: pointer;
             z-index: 150;
         }
@@ -79,13 +80,13 @@
         .hidden { display: none !important; }
         .transparent { opacity: 0 !important; }
 
-        /* Magsafe Container s Fade-in */
+        /* Magsafe Animation */
         #magsafe-container {
             display: none;
             flex-direction: column;
             align-items: center;
             opacity: 0;
-            transition: opacity 0.5s ease-out;
+            transition: opacity 0.4s ease;
         }
 
         #magsafe-container.active {
@@ -106,29 +107,26 @@
         .track {
             fill: none;
             stroke: rgba(255, 255, 255, 0.12);
-            stroke-width: 28;
-            transform-origin: center;
-            animation: ringErupt 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.1) forwards;
+            stroke-width: 30;
         }
 
         .progress {
             fill: none;
             stroke: var(--ios-green);
-            stroke-width: 28;
+            stroke-width: 30;
             stroke-linecap: round;
             stroke-dasharray: 880;
             stroke-dashoffset: 880;
             transform: rotate(-90deg);
             transform-origin: center;
-            transition: stroke-dashoffset 1.5s cubic-bezier(0.22, 1, 0.36, 1);
-            filter: drop-shadow(0 0 12px rgba(48, 209, 88, 0.4));
+            transition: stroke-dashoffset 1.4s cubic-bezier(0.2, 1, 0.3, 1);
+            filter: drop-shadow(0 0 15px rgba(48, 209, 88, 0.4));
         }
 
-        /* Zakulacený blesk */
         .bolt-svg {
             position: absolute;
-            width: 90px;
-            height: 90px;
+            width: 95px;
+            height: 95px;
             fill: var(--ios-green);
             opacity: 0;
             animation: boltPop 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.2) forwards 0.1s;
@@ -136,21 +134,14 @@
 
         .status-label {
             margin-top: 40px;
-            font-size: 32px;
+            font-size: 34px;
             font-weight: 700;
-            letter-spacing: -0.5px;
             opacity: 0;
             animation: fadeIn 0.4s ease-out forwards 0.3s;
         }
 
-        /* Animace */
-        @keyframes ringErupt {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
         @keyframes boltPop {
-            0% { transform: scale(0.5); opacity: 0; }
+            0% { transform: scale(0.7); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
 
@@ -158,7 +149,7 @@
 
         @keyframes magsafeExit {
             0% { opacity: 1; transform: scale(1); filter: blur(0); }
-            100% { opacity: 0; transform: scale(1.1); filter: blur(30px); }
+            100% { opacity: 0; transform: scale(1.06); filter: blur(40px); }
         }
     </style>
 </head>
@@ -178,29 +169,17 @@
                 <circle class="track" cx="200" cy="200" r="140"></circle>
                 <circle id="bar" class="progress" cx="200" cy="200" r="140"></circle>
             </svg>
-            <!-- Zakulacený blesk -->
             <svg class="bolt-svg" viewBox="0 0 24 24">
-                <path d="M12.5,2L5.5,13H11L10.5,22L18.5,11H13L12.5,2Z" stroke="var(--ios-green)" stroke-width="1" stroke-linejoin="round" />
+                <path d="M12.5,2L5.5,13H11L10.5,22L18.5,11H13L12.5,2Z" stroke-linejoin="round" />
             </svg>
         </div>
-        <div class="status-label" id="status-text">0% Nabíjím</div>
+        <div class="status-label" id="status-text">0% Charging</div>
     </div>
 
     <div id="nav-bar">
-        <!-- Ikona III -->
-        <svg class="nav-svg" viewBox="0 0 24 24">
-            <line x1="7" y1="5" x2="7" y2="19" />
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="17" y1="5" x2="17" y2="19" />
-        </svg>
-        <!-- Ikona O -->
-        <svg class="nav-svg" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="8" />
-        </svg>
-        <!-- Ikona < -->
-        <svg class="nav-svg" viewBox="0 0 24 24">
-            <polyline points="15 18 9 12 15 6" />
-        </svg>
+        <svg class="nav-svg" viewBox="0 0 24 24"><line x1="7" y1="5" x2="7" y2="19" /><line x1="12" y1="5" x2="12" y2="19" /><line x1="17" y1="5" x2="17" y2="19" /></svg>
+        <svg class="nav-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /></svg>
+        <svg class="nav-svg" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
     </div>
 
     <script>
@@ -252,12 +231,12 @@
             void container.offsetWidth; 
             
             bar.style.strokeDashoffset = '880';
-            text.textContent = Math.round(battery.level * 100) + '% Nabíjím';
+            text.textContent = Math.round(battery.level * 100) + '% Charging';
             container.classList.add('active');
 
             setTimeout(() => {
                 bar.style.strokeDashoffset = 880 - (880 * battery.level);
-            }, 150);
+            }, 100);
 
             clearTimeout(timer);
             timer = setTimeout(() => {
@@ -270,7 +249,7 @@
         navigator.getBattery().then(battery => {
             battery.addEventListener('chargingchange', () => { if (battery.charging) triggerMagsafe(); });
             if (battery.charging) {
-                startBtn.addEventListener('click', () => { setTimeout(triggerMagsafe, 600); }, { once: true });
+                startBtn.addEventListener('click', () => { setTimeout(triggerMagsafe, 500); }, { once: true });
             }
         });
     </script>
