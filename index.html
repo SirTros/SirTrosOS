@@ -19,14 +19,21 @@
             cursor: none;
         }
 
+        /* Indikátor pro Windows - zmizí po kliknutí */
+        #unlock-hint {
+            position: fixed;
+            bottom: 20px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.2);
+            cursor: pointer;
+        }
+
         #magsafe-container {
             display: none;
             flex-direction: column;
             align-items: center;
-            transform-origin: center;
         }
 
-        /* Hlavní animace zmizení celého prvku na konci (4.2s start) */
         .active {
             display: flex !important;
             animation: magsafeDisappear 0.8s cubic-bezier(0.4, 0, 1, 1) forwards 4.2s;
@@ -34,92 +41,76 @@
 
         .ring-box {
             position: relative;
-            width: 380px;
-            height: 380px;
+            width: 400px;
+            height: 400px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        /* Světle šedé vypuknutí (Eruption) - Startuje hned */
         .track {
             fill: none;
-            stroke: rgba(255, 255, 255, 0.15);
-            stroke-width: 30;
+            stroke: rgba(255, 255, 255, 0.16);
+            stroke-width: 32;
             opacity: 0;
             transform-origin: center;
-            animation: grayErupt 0.45s cubic-bezier(0.17, 0.8, 0.4, 1.05) forwards;
+            animation: grayErupt 0.35s cubic-bezier(0.1, 0.9, 0.3, 1) forwards;
         }
 
-        /* Zelený progres - Startuje s mírným zpožděním po vypuknutí šedé */
         .progress {
             fill: none;
             stroke: #30d158;
-            stroke-width: 30;
+            stroke-width: 32;
             stroke-linecap: round;
             stroke-dasharray: 880;
             stroke-dashoffset: 880;
             transform: rotate(-90deg);
             transform-origin: center;
-            transition: stroke-dashoffset 1.5s cubic-bezier(0.15, 0.5, 0.1, 1);
-            filter: drop-shadow(0 0 15px rgba(48, 209, 88, 0.35));
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.1, 0.5, 0.1, 1);
+            filter: drop-shadow(0 0 18px rgba(48, 209, 88, 0.4));
         }
 
-        /* Ještě větší zaoblený blesk - Vystřelí spolu s šedou */
         .bolt-svg {
             position: absolute;
-            width: 105px; /* Větší blesk */
-            height: 105px;
+            width: 115px; 
+            height: 115px;
             fill: #30d158;
             stroke: #30d158;
-            stroke-width: 2.8;
+            stroke-width: 2.5;
             stroke-linejoin: round;
-            filter: drop-shadow(0 0 20px rgba(48, 209, 88, 0.5));
+            filter: drop-shadow(0 0 20px rgba(48, 209, 88, 0.55));
             opacity: 0;
-            animation: boltPop 0.4s cubic-bezier(0.15, 0.85, 0.35, 1.25) forwards 0.05s;
+            animation: boltPop 0.35s cubic-bezier(0.1, 0.9, 0.3, 1.2) forwards;
         }
 
-        /* Text procent */
         .status-label {
-            margin-top: 40px;
-            font-size: 30px;
+            margin-top: 45px;
+            font-size: 32px;
             font-weight: 800;
-            letter-spacing: -0.6px;
+            letter-spacing: -0.8px;
             opacity: 0;
-            animation: fadeInText 0.4s ease-out forwards 0.4s;
+            animation: fadeInText 0.3s ease-out forwards 0.2s;
         }
 
-        /* --- Animace fází --- */
-
-        @keyframes grayErupt {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes boltPop {
-            0% { transform: scale(0.3); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes fadeInText {
-            to { opacity: 1; }
-        }
-
+        @keyframes grayErupt { 0% { transform: scale(0.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes boltPop { 0% { transform: scale(0.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes fadeInText { to { opacity: 1; } }
         @keyframes magsafeDisappear {
             0% { opacity: 1; filter: blur(0); transform: scale(1); }
-            100% { opacity: 0; filter: blur(40px); transform: scale(1.1); }
+            100% { opacity: 0; filter: blur(50px); transform: scale(1.15); }
         }
     </style>
 </head>
-<body>
+<body onclick="unlockAudio()">
 
-    <audio id="chargeSound" src="charging.wav"></audio>
+    <div id="unlock-hint">Click once anywhere to enable sound</div>
+    <audio id="chargeSound" src="charging.wav" preload="auto"></audio>
 
     <div id="magsafe-container">
         <div class="ring-box">
-            <svg width="380" height="380">
-                <circle class="track" cx="190" cy="190" r="140"></circle>
-                <circle id="bar" class="progress" cx="190" cy="190" r="140"></circle>
+            <svg width="400" height="400">
+                <circle class="track" cx="200" cy="200" r="140"></circle>
+                <circle id="bar" class="progress" cx="200" cy="200" r="140"></circle>
             </svg>
             <svg class="bolt-svg" viewBox="0 0 32 32">
                 <path d="M19,2 L7,18 L14,18 L13,30 L25,14 L18,14 L19,2 Z"></path>
@@ -133,29 +124,44 @@
         const bar = document.getElementById('bar');
         const text = document.getElementById('status-text');
         const sound = document.getElementById('chargeSound');
+        const hint = document.getElementById('unlock-hint');
         let timer;
+        let audioUnlocked = false;
+
+        // Klíčová funkce pro GitHub / Windows Chrome
+        function unlockAudio() {
+            if (!audioUnlocked) {
+                sound.play().then(() => {
+                    sound.pause();
+                    sound.currentTime = 0;
+                    audioUnlocked = true;
+                    hint.style.display = 'none';
+                    console.log("Audio ready");
+                }).catch(e => console.log("Still blocked"));
+            }
+        }
 
         async function triggerMagsafe() {
             const battery = await navigator.getBattery();
             
-            // Restart vizuálního kontejneru
+            // Okamžitý zvuk (pokud je odemčeno)
+            if (audioUnlocked) {
+                sound.currentTime = 0;
+                sound.play();
+            }
+
             container.classList.remove('active');
             void container.offsetWidth; 
             
             bar.style.strokeDashoffset = '880';
             text.textContent = Math.round(battery.level * 100) + '% Charging...';
             
-            // Spuštění grafiky (vypuknutí šedé a blesku)
             container.classList.add('active');
 
-            // Zpoždění pro zvuk a zelený progres (až se šedý kruh "usadí")
             setTimeout(() => {
-                sound.currentTime = 0;
-                sound.play().catch(() => {});
-                
                 const offset = 880 - (880 * battery.level);
                 bar.style.strokeDashoffset = offset;
-            }, 350); // Časování pro zvuk a začátek kreslení
+            }, 100);
 
             clearTimeout(timer);
             timer = setTimeout(() => {
@@ -167,9 +173,9 @@
             battery.addEventListener('chargingchange', () => {
                 if (battery.charging) triggerMagsafe();
             });
+            // Pokud se už nabíjí při startu
             if (battery.charging) triggerMagsafe();
         });
     </script>
 </body>
 </html>
-
