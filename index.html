@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Magsafe UI</title>
+    <title>Magsafe UI Secret</title>
     <style>
         :root {
             --ios-green: #30d158;
@@ -43,7 +43,7 @@
             #status-bar, #nav-bar, #magsafe-container, #start-btn { display: none !important; }
         }
 
-        /* Top Bar - Pushed to the absolute top */
+        /* Top Bar */
         #status-bar {
             position: fixed;
             top: 0;
@@ -59,7 +59,7 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Bottom Nav - Buttons slightly larger and closer */
+        /* Bottom Nav */
         #nav-bar {
             position: fixed;
             bottom: 4px;
@@ -75,13 +75,14 @@
         }
 
         .nav-svg {
-            width: 23px; /* Slightly larger buttons */
-            height: 23px;
+            width: 25px; /* Mírně větší tlačítka */
+            height: 25px;
             fill: none;
             stroke: var(--nav-white);
             stroke-width: 2.2;
             stroke-linecap: round;
             stroke-linejoin: round;
+            cursor: pointer;
         }
 
         #start-btn {
@@ -201,8 +202,13 @@
     </div>
 
     <div id="nav-bar">
+        <!-- III Button -->
         <svg class="nav-svg" viewBox="0 0 24 24"><line x1="7" y1="5" x2="7" y2="19" /><line x1="12" y1="5" x2="12" y2="19" /><line x1="17" y1="5" x2="17" y2="19" /></svg>
-        <svg class="nav-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /></svg>
+        
+        <!-- O Button (SECRET TRIGGER) -->
+        <svg id="secret-trigger" class="nav-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /></svg>
+        
+        <!-- < Button -->
         <svg class="nav-svg" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
     </div>
 
@@ -216,6 +222,7 @@
         const sound = document.getElementById('chargeSound');
         const clockEl = document.getElementById('clock');
         const battEl = document.getElementById('battery-status');
+        const secretTrigger = document.getElementById('secret-trigger');
         
         let wakeLock = null;
         let timer;
@@ -226,9 +233,7 @@
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
                 }
-            } catch (err) {
-                console.log(`${err.name}, ${err.message}`);
-            }
+            } catch (err) {}
         }
 
         function updateStatus() {
@@ -244,15 +249,10 @@
         setInterval(updateStatus, 1000);
 
         startBtn.addEventListener('click', () => {
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
-            }
-            
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
             requestWakeLock();
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('portrait').catch(() => {});
-            }
-
+            if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(() => {});
+            
             sound.play().then(() => { sound.pause(); sound.currentTime = 0; audioUnlocked = true; }).catch(() => {});
             startBtn.classList.add('hidden');
             statusBar.style.display = 'flex';
@@ -289,6 +289,9 @@
             }, 5000);
         }
 
+        // Secret trigger on O button
+        secretTrigger.addEventListener('click', triggerMagsafe);
+
         navigator.getBattery().then(battery => {
             battery.addEventListener('chargingchange', () => { if (battery.charging) triggerMagsafe(); });
             if (battery.charging) {
@@ -297,9 +300,7 @@
         });
 
         document.addEventListener('visibilitychange', () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                requestWakeLock();
-            }
+            if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
         });
     </script>
 </body>
