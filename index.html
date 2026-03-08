@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> </title>
+    <style>
+        body {
+            background-color: #000;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            overflow: hidden;
+            color: white;
+            user-select: none;
+            cursor: none;
+        }
+
+        #magsafe-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: center;
+        }
+
+        /* Hlavní animace zmizení celého prvku na konci (4.2s start) */
+        .active {
+            display: flex !important;
+            animation: magsafeDisappear 0.8s cubic-bezier(0.4, 0, 1, 1) forwards 4.2s;
+        }
+
+        .ring-box {
+            position: relative;
+            width: 380px;
+            height: 380px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Světle šedé vypuknutí (Eruption) - Startuje hned */
+        .track {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.15);
+            stroke-width: 30;
+            opacity: 0;
+            transform-origin: center;
+            animation: grayErupt 0.45s cubic-bezier(0.17, 0.8, 0.4, 1.05) forwards;
+        }
+
+        /* Zelený progres - Startuje s mírným zpožděním po vypuknutí šedé */
+        .progress {
+            fill: none;
+            stroke: #30d158;
+            stroke-width: 30;
+            stroke-linecap: round;
+            stroke-dasharray: 880;
+            stroke-dashoffset: 880;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.15, 0.5, 0.1, 1);
+            filter: drop-shadow(0 0 15px rgba(48, 209, 88, 0.35));
+        }
+
+        /* Ještě větší zaoblený blesk - Vystřelí spolu s šedou */
+        .bolt-svg {
+            position: absolute;
+            width: 105px; /* Větší blesk */
+            height: 105px;
+            fill: #30d158;
+            stroke: #30d158;
+            stroke-width: 2.8;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 20px rgba(48, 209, 88, 0.5));
+            opacity: 0;
+            animation: boltPop 0.4s cubic-bezier(0.15, 0.85, 0.35, 1.25) forwards 0.05s;
+        }
+
+        /* Text procent */
+        .status-label {
+            margin-top: 40px;
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            opacity: 0;
+            animation: fadeInText 0.4s ease-out forwards 0.4s;
+        }
+
+        /* --- Animace fází --- */
+
+        @keyframes grayErupt {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes boltPop {
+            0% { transform: scale(0.3); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeInText {
+            to { opacity: 1; }
+        }
+
+        @keyframes magsafeDisappear {
+            0% { opacity: 1; filter: blur(0); transform: scale(1); }
+            100% { opacity: 0; filter: blur(40px); transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="chargeSound" src="charging.wav"></audio>
+
+    <div id="magsafe-container">
+        <div class="ring-box">
+            <svg width="380" height="380">
+                <circle class="track" cx="190" cy="190" r="140"></circle>
+                <circle id="bar" class="progress" cx="190" cy="190" r="140"></circle>
+            </svg>
+            <svg class="bolt-svg" viewBox="0 0 32 32">
+                <path d="M19,2 L7,18 L14,18 L13,30 L25,14 L18,14 L19,2 Z"></path>
+            </svg>
+        </div>
+        <div class="status-label" id="status-text">0% Charging...</div>
+    </div>
+
+    <script>
+        const container = document.getElementById('magsafe-container');
+        const bar = document.getElementById('bar');
+        const text = document.getElementById('status-text');
+        const sound = document.getElementById('chargeSound');
+        let timer;
+
+        async function triggerMagsafe() {
+            const battery = await navigator.getBattery();
+            
+            // Restart vizuálního kontejneru
+            container.classList.remove('active');
+            void container.offsetWidth; 
+            
+            bar.style.strokeDashoffset = '880';
+            text.textContent = Math.round(battery.level * 100) + '% Charging...';
+            
+            // Spuštění grafiky (vypuknutí šedé a blesku)
+            container.classList.add('active');
+
+            // Zpoždění pro zvuk a zelený progres (až se šedý kruh "usadí")
+            setTimeout(() => {
+                sound.currentTime = 0;
+                sound.play().catch(() => {});
+                
+                const offset = 880 - (880 * battery.level);
+                bar.style.strokeDashoffset = offset;
+            }, 350); // Časování pro zvuk a začátek kreslení
+
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                container.classList.remove('active');
+            }, 5000);
+        }
+
+        navigator.getBattery().then(battery => {
+            battery.addEventListener('chargingchange', () => {
+                if (battery.charging) triggerMagsafe();
+            });
+            if (battery.charging) triggerMagsafe();
+        });
+    </script>
+</body>
+</html>
