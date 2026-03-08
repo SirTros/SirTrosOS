@@ -18,7 +18,22 @@
             user-select: none;
         }
 
-        /* Tlačítko Start */
+        /* Horní lišta */
+        #status-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 25px;
+            display: none; /* Skryté do Startu */
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+            z-index: 50;
+            transition: opacity 0.5s;
+        }
+
         #start-btn {
             padding: 15px 40px;
             font-size: 18px;
@@ -29,14 +44,11 @@
             border-radius: 30px;
             cursor: pointer;
             z-index: 100;
-            transition: transform 0.2s, opacity 0.3s;
         }
 
-        #start-btn:active { transform: scale(0.95); }
-
-        /* Skrytí prvků po startu */
         .hidden { display: none !important; }
         .no-cursor { cursor: none; }
+        .transparent { opacity: 0; }
 
         #magsafe-container {
             display: none;
@@ -103,7 +115,7 @@
         }
 
         @keyframes grayErupt { 0% { transform: scale(0.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes boltPop { 0% { transform: scale(0.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes boltPop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes fadeInText { to { opacity: 1; } }
         @keyframes magsafeDisappear {
             0% { opacity: 1; filter: blur(0); transform: scale(1); }
@@ -115,6 +127,11 @@
 
     <button id="start-btn">START FULLSCREEN</button>
     <audio id="chargeSound" src="charging.wav" preload="auto"></audio>
+
+    <div id="status-bar">
+        <div id="clock">00:00</div>
+        <div id="battery-status">100% 🔋</div>
+    </div>
 
     <div id="magsafe-container">
         <div class="ring-box">
@@ -131,73 +148,79 @@
 
     <script>
         const startBtn = document.getElementById('start-btn');
+        const statusBar = document.getElementById('status-bar');
         const container = document.getElementById('magsafe-container');
         const bar = document.getElementById('bar');
         const text = document.getElementById('status-text');
         const sound = document.getElementById('chargeSound');
+        const clockEl = document.getElementById('clock');
+        const battEl = document.getElementById('battery-status');
+        
         let timer;
         let audioUnlocked = false;
 
-        // Aktivace Fullscreenu a Audia
+        // Aktualizace hodin a baterie v liště
+        function updateStatus() {
+            const now = new Date();
+            clockEl.textContent = now.getHours().toString().padStart(2, '0') + ':' + 
+                                 now.getMinutes().toString().padStart(2, '0');
+
+            navigator.getBattery().then(batt => {
+                const level = Math.round(batt.level * 100);
+                let emoji = "";
+                
+                if (batt.charging) {
+                    emoji = "⚡";
+                } else {
+                    emoji = level > 20 ? "🔋" : "🪫";
+                }
+                
+                battEl.textContent = level + "% " + emoji;
+            });
+        }
+        setInterval(updateStatus, 1000);
+
         startBtn.addEventListener('click', () => {
-            // Fullscreen
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
-            } else if (document.documentElement.webkitRequestFullscreen) {
-                document.documentElement.webkitRequestFullscreen(); // Safari
-            }
-
-            // Odemknutí audia
-            sound.play().then(() => {
-                sound.pause();
-                sound.currentTime = 0;
-                audioUnlocked = true;
-            }).catch(() => {});
-
-            // Skrytí tlačítka a kurzoru
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            sound.play().then(() => { sound.pause(); sound.currentTime = 0; audioUnlocked = true; }).catch(() => {});
+            
             startBtn.classList.add('hidden');
+            statusBar.style.display = 'flex';
             document.body.classList.add('no-cursor');
+            updateStatus();
         });
 
         async function triggerMagsafe() {
-            if (!audioUnlocked) return; // Čekáme na zmáčknutí Startu
-
+            if (!audioUnlocked) return;
             const battery = await navigator.getBattery();
             
-            // Okamžitý zvuk
             sound.currentTime = 0;
-            sound.play().catch(e => console.log(e));
+            sound.play().catch(() => {});
 
-            // Reset animace
+            // Skrýt stavovou lištu během animace
+            statusBar.classList.add('transparent');
+
             container.classList.remove('active');
             void container.offsetWidth; 
-            
             bar.style.strokeDashoffset = '880';
             text.textContent = Math.round(battery.level * 100) + '% Charging...';
-            
             container.classList.add('active');
 
             setTimeout(() => {
-                const offset = 880 - (880 * battery.level);
-                bar.style.strokeDashoffset = offset;
+                bar.style.strokeDashoffset = 880 - (880 * battery.level);
             }, 100);
 
             clearTimeout(timer);
             timer = setTimeout(() => {
                 container.classList.remove('active');
+                statusBar.classList.remove('transparent'); // Znovu ukázat lištu
             }, 5000);
         }
 
-        // Monitoring baterie
         navigator.getBattery().then(battery => {
-            battery.addEventListener('chargingchange', () => {
-                if (battery.charging) triggerMagsafe();
-            });
-            // Pokud se už nabíjí, spustí se až po kliku na Start (vyřešeno v triggeru)
+            battery.addEventListener('chargingchange', () => { if (battery.charging) triggerMagsafe(); });
             if (battery.charging) {
-                startBtn.addEventListener('click', () => {
-                    setTimeout(triggerMagsafe, 500);
-                }, { once: true });
+                startBtn.addEventListener('click', () => { setTimeout(triggerMagsafe, 600); }, { once: true });
             }
         });
     </script>
